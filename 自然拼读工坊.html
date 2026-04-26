@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>牛津沪教版·自然拼读工坊 | 统一高度字母框 计时计数</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            background: linear-gradient(145deg, #eef5f0 0%, #d4e3da 100%);
+            font-family: 'Segoe UI', 'Comic Neue', 'Poppins', system-ui, sans-serif;
+            margin: 0;
+            padding: 1rem;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .game-card {
+            max-width: 1400px;
+            width: 100%;
+            background: #fffef7;
+            border-radius: 2.5rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15), 0 0 0 1px #ffebc2;
+            overflow: hidden;
+        }
+
+        .game-header {
+            background: linear-gradient(120deg, #2b7a62, #3faa8f);
+            padding: 1rem 1.5rem;
+            text-align: center;
+            color: white;
+        }
+
+        .game-header h1 {
+            margin: 0;
+            font-size: 1.6rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .badge {
+            background: #ffcf4a;
+            color: #2c5a4a;
+            font-size: 0.7rem;
+            font-weight: bold;
+            padding: 0.2rem 1rem;
+            border-radius: 40px;
+        }
+
+        /* 统计栏：计时 + 计数 */
+        .stats-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #293f36;
+            color: #ffefcf;
+            margin: 0.5rem 1.5rem 0;
+            padding: 0.5rem 1.2rem;
+            border-radius: 3rem;
+            font-weight: 600;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        .stat-item {
+            background: #1f3a30;
+            padding: 0.3rem 1rem;
+            border-radius: 3rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 1rem;
+        }
+        .stat-value {
+            font-size: 1.3rem;
+            font-weight: 800;
+            font-family: monospace;
+            background: #00000033;
+            padding: 0 0.4rem;
+            border-radius: 1rem;
+            min-width: 60px;
+            text-align: center;
+        }
+        .reset-count {
+            background: #ffb347;
+            border: none;
+            color: #2c2b28;
+            border-radius: 2rem;
+            padding: 0.2rem 0.8rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.1s;
+        }
+        .reset-count:active {
+            transform: scale(0.95);
+        }
+
+        .info-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin: 1rem 1.5rem 0;
+            background: #fef2e0;
+            padding: 0.6rem 1.2rem;
+            border-radius: 2rem;
+        }
+
+        .meaning-block {
+            background: #eef4ea;
+            border-radius: 60px;
+            padding: 0.2rem 1rem;
+        }
+
+        .meaning {
+            font-weight: 700;
+            font-size: 1.2rem;
+            color: #2c5a4a;
+        }
+
+        .pronounce {
+            font-family: 'Lucida Sans', 'Segoe UI', monospace;
+            font-size: 0.9rem;
+            background: #f3e5ce;
+            padding: 0.2rem 0.8rem;
+            border-radius: 30px;
+            margin-left: 0.6rem;
+        }
+
+        .speak-btn {
+            background: #ffd966;
+            border: none;
+            font-size: 1.6rem;
+            width: 48px;
+            height: 48px;
+            border-radius: 60px;
+            cursor: pointer;
+            transition: 0.08s linear;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .speak-btn:active {
+            transform: scale(0.94);
+        }
+
+        /* 完整单词显示区域 */
+        .full-word-area {
+            background: #eef0ea;
+            margin: 0rem 1.5rem 0.5rem;
+            padding: 0.6rem;
+            border-radius: 2rem;
+            text-align: center;
+            font-size: 1rem;
+            color: #2c5a4a;
+            font-weight: 500;
+            transition: 0.2s;
+            border: 1px dashed #c0cfa5;
+        }
+        .full-word-area span {
+            font-weight: 800;
+            font-size: 1.2rem;
+            font-family: monospace;
+            letter-spacing: 2px;
+            color: #1f6e43;
+        }
+
+        /* 拼写区域：所有字母在一行，横向滚动 */
+        .spelling-area {
+            background: #ffffff;
+            margin: 1rem 1.5rem;
+            border-radius: 2rem;
+            padding: 1rem 1rem;
+            box-shadow: inset 0 0 0 2px #fffdf8, 0 8px 15px rgba(0, 0, 0, 0.05);
+            overflow-x: auto;
+            overflow-y: hidden;
+            white-space: nowrap;
+        }
+
+        .word-chunks {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: nowrap;
+            justify-content: flex-start;
+            align-items: center;
+            gap: 0.8rem;
+            padding-bottom: 4px;
+        }
+
+        /* 统一字母框样式：固定宽高，严格一致 */
+        .letter-unit, .static-unit {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            background: #fefaf2;
+            border-radius: 1.2rem;
+            width: 90px;
+            height: 110px;          /* 固定高度，确保所有框一致 */
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            padding: 8px 4px 6px 4px;
+        }
+
+        /* 静态字母块（无选项）使用相同背景和尺寸 */
+        .static-unit {
+            background: #edf3e7;
+            justify-content: center;
+            font-size: 2rem;
+            font-weight: 700;
+            font-family: 'Courier New', monospace;
+            color: #2d3e2b;
+        }
+
+        /* 显示字母的区域（缺失框内） */
+        .letter-display {
+            font-size: 2rem;
+            font-weight: 800;
+            font-family: 'Courier New', monospace;
+            background: #fff9f0;
+            width: 100%;
+            text-align: center;
+            padding: 0.6rem 0;
+            border-radius: 1rem;
+            margin-bottom: 8px;
+            min-height: 82px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* 未填充时的实线占位符 */
+        .missing-placeholder {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .solid-line {
+            border-bottom: 4px solid #2c3e2b;
+            width: 70%;
+            height: 2rem;
+            background: #fff0e0;
+        }
+
+        /* 正确填充后的样式 */
+        .filled-correct {
+            background: #d9f0e2;
+            color: #1f6e43;
+        }
+
+        /* 选项区域 (框外) */
+        .options-area {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            padding-top: 4px;
+        }
+
+        .opt-btn {
+            background: #fad89d;
+            border: none;
+            padding: 5px 10px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            border-radius: 40px;
+            cursor: pointer;
+            font-family: monospace;
+            transition: 0.05s linear;
+            text-transform: lowercase;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        .opt-btn:active {
+            transform: translateY(2px);
+        }
+
+        .opt-btn.disabled-btn, .opt-btn:disabled {
+            opacity: 0.5;
+            transform: none;
+            cursor: not-allowed;
+        }
+
+        /* 错误抖动和红色反馈 */
+        .error-shake {
+            animation: shake 0.2s ease-in-out 0s 2;
+            background-color: #f0a0a0 !important;
+        }
+
+        @keyframes shake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-4px); }
+            75% { transform: translateX(4px); }
+            100% { transform: translateX(0); }
+        }
+
+        .feedback-area {
+            margin: 0.3rem 1.5rem 0.8rem;
+            text-align: center;
+            font-size: 1rem;
+            font-weight: 500;
+            padding: 0.6rem;
+            border-radius: 50px;
+            background: #f4efe6;
+            transition: 0.1s;
+        }
+
+        .success-feedback {
+            background: #d7f0e4;
+            color: #196f48;
+            border-left: 6px solid #2ecc71;
+        }
+
+        .next-btn {
+            background: #ff9f4a;
+            width: 80%;
+            display: block;
+            margin: 0.5rem auto 1.2rem;
+            padding: 0.8rem;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 60px;
+            color: white;
+            cursor: pointer;
+            box-shadow: 0 5px 0 #b4581c;
+            transition: 0.05s linear;
+        }
+
+        .next-btn:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 0 #b4581c;
+        }
+
+        footer {
+            background: #efe3d2;
+            text-align: center;
+            font-size: 0.7rem;
+            padding: 0.6rem;
+            color: #7a5a3a;
+        }
+
+        /* 滚动条 */
+        .spelling-area::-webkit-scrollbar {
+            height: 6px;
+        }
+        .spelling-area::-webkit-scrollbar-track {
+            background: #f1e9dd;
+            border-radius: 10px;
+        }
+        .spelling-area::-webkit-scrollbar-thumb {
+            background: #c0a16b;
+            border-radius: 10px;
+        }
+
+        @media (max-width: 700px) {
+            .letter-unit, .static-unit {
+                width: 75px;
+                height: 95px;
+            }
+            .letter-display {
+                font-size: 1.5rem;
+                min-height: 65px;
+            }
+            .static-unit {
+                font-size: 1.5rem;
+            }
+            .opt-btn {
+                padding: 4px 8px;
+                font-size: 0.7rem;
+            }
+            .stat-item {
+                font-size: 0.8rem;
+            }
+            .stat-value {
+                font-size: 1rem;
+                min-width: 45px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="game-card">
+    <div class="game-header">
+        <h1>📖 自然拼读工坊 <span class="badge">牛津沪教版·小学单词520+</span></h1>
+        <div style="font-size:0.75rem;">🔊 英式发音 | 统一字母框 | 计时+计数统计</div>
+    </div>
+
+    <!-- 统计栏 -->
+    <div class="stats-bar">
+        <div class="stat-item">✅ 正确完成: <span id="correctCountDisplay" class="stat-value">0</span></div>
+        <div class="stat-item">⏱️ 当前单词用时: <span id="timerDisplay" class="stat-value">0.0</span> 秒</div>
+        <button id="resetCountBtn" class="reset-count">重置计数</button>
+    </div>
+
+    <div class="info-bar">
+        <div class="meaning-block">
+            <span class="meaning" id="wordMeaning">苹果</span>
+            <span class="pronounce" id="wordPronounce">/ˈæpəl/</span>
+        </div>
+        <button class="speak-btn" id="speakBtn" aria-label="英式发音">🔊</button>
+    </div>
+
+    <!-- 完整单词显示区域 -->
+    <div class="full-word-area" id="fullWordDisplay">
+        💡 完成全部填空后，完整单词将显示在这里
+    </div>
+
+    <div class="spelling-area">
+        <div id="chunksContainer" class="word-chunks"></div>
+    </div>
+
+    <div id="feedbackMsg" class="feedback-area">✨ 点击空缺下方的字母(组合)补全单词 ✨</div>
+
+    <button id="nextWordBtn" class="next-btn">🎲 下一个单词 🎲</button>
+    <footer>📌 规则：缺失元音或辅音(含组合) | 所有字母框大小高低一致 | 完成所有空缺后自动展示完整单词并统计用时<br>📊 计时从单词出现开始，正确完成停止；累计正确单词计数可重置</footer>
+</div>
+
+<script>
+    // ======================= 单词库：牛津沪教版小学核心词汇 520+ =======================
+    const wordBankData = [
+        { word: "apple", pronunciation: "/ˈæpəl/", meaning: "苹果" },{ word: "cat", pronunciation: "/kæt/", meaning: "猫" },
+        { word: "dog", pronunciation: "/dɒɡ/", meaning: "狗" },{ word: "bird", pronunciation: "/bɜːd/", meaning: "鸟" },
+        { word: "fish", pronunciation: "/fɪʃ/", meaning: "鱼" },{ word: "teacher", pronunciation: "/ˈtiːtʃə/", meaning: "老师" },
+        { word: "school", pronunciation: "/skuːl/", meaning: "学校" },{ word: "book", pronunciation: "/bʊk/", meaning: "书" },
+        { word: "pen", pronunciation: "/pen/", meaning: "钢笔" },{ word: "desk", pronunciation: "/desk/", meaning: "书桌" },
+        { word: "chair", pronunciation: "/tʃeə/", meaning: "椅子" },{ word: "mother", pronunciation: "/ˈmʌðə/", meaning: "母亲" },
+        { word: "father", pronunciation: "/ˈfɑːðə/", meaning: "父亲" },{ word: "brother", pronunciation: "/ˈbrʌðə/", meaning: "兄弟" },
+        { word: "sister", pronunciation: "/ˈsɪstə/", meaning: "姐妹" },{ word: "happy", pronunciation: "/ˈhæpi/", meaning: "快乐的" },
+        { word: "sad", pronunciation: "/sæd/", meaning: "难过的" },{ word: "big", pronunciation: "/bɪɡ/", meaning: "大的" },
+        { word: "small", pronunciation: "/smɔːl/", meaning: "小的" },{ word: "red", pronunciation: "/red/", meaning: "红色" },
+        { word: "blue", pronunciation: "/bluː/", meaning: "蓝色" },{ word: "yellow", pronunciation: "/ˈjeləʊ/", meaning: "黄色" },
+        { word: "run", pronunciation: "/rʌn/", meaning: "跑" },{ word: "jump", pronunciation: "/dʒʌmp/", meaning: "跳" },
+        { word: "swim", pronunciation: "/swɪm/", meaning: "游泳" },{ word: "read", pronunciation: "/riːd/", meaning: "阅读" },
+        { word: "write", pronunciation: "/raɪt/", meaning: "写" },{ word: "orange", pronunciation: "/ˈɒrɪndʒ/", meaning: "橙子" },
+        { word: "grape", pronunciation: "/ɡreɪp/", meaning: "葡萄" },{ word: "banana", pronunciation: "/bəˈnɑːnə/", meaning: "香蕉" },
+        { word: "elephant", pronunciation: "/ˈelɪfənt/", meaning: "大象" },{ word: "tiger", pronunciation: "/ˈtaɪɡə/", meaning: "老虎" },
+        { word: "monkey", pronunciation: "/ˈmʌŋki/", meaning: "猴子" },{ word: "panda", pronunciation: "/ˈpændə/", meaning: "熊猫" },
+        { word: "car", pronunciation: "/kɑː/", meaning: "汽车" },{ word: "bus", pronunciation: "/bʌs/", meaning: "公交车" },
+        { word: "house", pronunciation: "/haʊs/", meaning: "房子" },{ word: "flower", pronunciation: "/ˈflaʊə/", meaning: "花" },
+        { word: "sun", pronunciation: "/sʌn/", meaning: "太阳" },{ word: "moon", pronunciation: "/muːn/", meaning: "月亮" },
+        { word: "star", pronunciation: "/stɑː/", meaning: "星星" },{ word: "friend", pronunciation: "/frend/", meaning: "朋友" },
+        { word: "family", pronunciation: "/ˈfæməli/", meaning: "家庭" },{ word: "water", pronunciation: "/ˈwɔːtə/", meaning: "水" },
+        { word: "milk", pronunciation: "/mɪlk/", meaning: "牛奶" },{ word: "cake", pronunciation: "/keɪk/", meaning: "蛋糕" },
+        { word: "mouse", pronunciation: "/maʊs/", meaning: "老鼠" },{ word: "duck", pronunciation: "/dʌk/", meaning: "鸭子" },
+        { word: "rabbit", pronunciation: "/ˈræbɪt/", meaning: "兔子" },{ word: "frog", pronunciation: "/frɒɡ/", meaning: "青蛙" },
+        { word: "bee", pronunciation: "/biː/", meaning: "蜜蜂" },{ word: "sunny", pronunciation: "/ˈsʌni/", meaning: "晴朗的" },
+        { word: "cloudy", pronunciation: "/ˈklaʊdi/", meaning: "多云的" },{ word: "rainy", pronunciation: "/ˈreɪni/", meaning: "下雨的" },
+        { word: "windy", pronunciation: "/ˈwɪndi/", meaning: "有风的" },{ word: "cold", pronunciation: "/kəʊld/", meaning: "寒冷的" },
+        { word: "hot", pronunciation: "/hɒt/", meaning: "炎热的" },{ word: "warm", pronunciation: "/wɔːm/", meaning: "温暖的" },
+        { word: "cool", pronunciation: "/kuːl/", meaning: "凉爽的" },{ word: "one", pronunciation: "/wʌn/", meaning: "一" },
+        { word: "two", pronunciation: "/tuː/", meaning: "二" },{ word: "three", pronunciation: "/θriː/", meaning: "三" },
+        { word: "four", pronunciation: "/fɔː/", meaning: "四" },{ word: "five", pronunciation: "/faɪv/", meaning: "五" },
+        { word: "six", pronunciation: "/sɪks/", meaning: "六" },{ word: "seven", pronunciation: "/ˈsevən/", meaning: "七" },
+        { word: "eight", pronunciation: "/eɪt/", meaning: "八" },{ word: "nine", pronunciation: "/naɪn/", meaning: "九" },
+        { word: "ten", pronunciation: "/ten/", meaning: "十" },{ word: "morning", pronunciation: "/ˈmɔːnɪŋ/", meaning: "早晨" },
+        { word: "afternoon", pronunciation: "/ˌɑːftəˈnuːn/", meaning: "下午" },{ word: "evening", pronunciation: "/ˈiːvnɪŋ/", meaning: "傍晚" },
+        { word: "night", pronunciation: "/naɪt/", meaning: "夜晚" },{ word: "grandma", pronunciation: "/ˈɡrænmɑː/", meaning: "奶奶" },
+        { word: "grandpa", pronunciation: "/ˈɡrænpɑː/", meaning: "爷爷" },{ word: "uncle", pronunciation: "/ˈʌŋkəl/", meaning: "叔叔" },
+        { word: "aunt", pronunciation: "/ɑːnt/", meaning: "阿姨" },{ word: "cow", pronunciation: "/kaʊ/", meaning: "奶牛" },
+        { word: "horse", pronunciation: "/hɔːs/", meaning: "马" },{ word: "sheep", pronunciation: "/ʃiːp/", meaning: "绵羊" },
+        { word: "chicken", pronunciation: "/ˈtʃɪkɪn/", meaning: "鸡" },{ word: "brown", pronunciation: "/braʊn/", meaning: "棕色" },
+        { word: "green", pronunciation: "/ɡriːn/", meaning: "绿色" },{ word: "black", pronunciation: "/blæk/", meaning: "黑色" },
+        { word: "white", pronunciation: "/waɪt/", meaning: "白色" },{ word: "pink", pronunciation: "/pɪŋk/", meaning: "粉色" },
+        { word: "schoolbag", pronunciation: "/ˈskuːlˌbæɡ/", meaning: "书包" },{ word: "ruler", pronunciation: "/ˈruːlə/", meaning: "尺子" },
+        { word: "eraser", pronunciation: "/ɪˈreɪzə/", meaning: "橡皮" },{ word: "crayon", pronunciation: "/ˈkreɪɒn/", meaning: "蜡笔" },
+        { word: "door", pronunciation: "/dɔː/", meaning: "门" },{ word: "window", pronunciation: "/ˈwɪndəʊ/", meaning: "窗户" },
+        { word: "playground", pronunciation: "/ˈpleɪɡraʊnd/", meaning: "操场" },{ word: "library", pronunciation: "/ˈlaɪbrəri/", meaning: "图书馆" },
+        { word: "computer", pronunciation: "/kəmˈpjuːtə/", meaning: "电脑" },{ word: "music", pronunciation: "/ˈmjuːzɪk/", meaning: "音乐" },
+        { word: "science", pronunciation: "/ˈsaɪəns/", meaning: "科学" },{ word: "art", pronunciation: "/ɑːt/", meaning: "美术" },
+        { word: "maths", pronunciation: "/mæθs/", meaning: "数学" },{ word: "chinese", pronunciation: "/tʃaɪˈniːz/", meaning: "语文" },
+        { word: "english", pronunciation: "/ˈɪŋɡlɪʃ/", meaning: "英语" },{ word: "story", pronunciation: "/ˈstɔːri/", meaning: "故事" },
+        { word: "weather", pronunciation: "/ˈweðə/", meaning: "天气" },{ word: "spring", pronunciation: "/sprɪŋ/", meaning: "春天" },
+        { word: "summer", pronunciation: "/ˈsʌmə/", meaning: "夏天" },{ word: "autumn", pronunciation: "/ˈɔːtəm/", meaning: "秋天" },
+        { word: "winter", pronunciation: "/ˈwɪntə/", meaning: "冬天" },{ word: "fruit", pronunciation: "/fruːt/", meaning: "水果" },
+        { word: "vegetable", pronunciation: "/ˈvedʒtəbl/", meaning: "蔬菜" },{ word: "kitchen", pronunciation: "/ˈkɪtʃɪn/", meaning: "厨房" },
+        { word: "bathroom", pronunciation: "/ˈbɑːθruːm/", meaning: "浴室" },{ word: "bedroom", pronunciation: "/ˈbedruːm/", meaning: "卧室" },
+        { word: "livingroom", pronunciation: "/ˈlɪvɪŋ ruːm/", meaning: "客厅" },{ word: "phone", pronunciation: "/fəʊn/", meaning: "电话" },
+        { word: "photo", pronunciation: "/ˈfəʊtəʊ/", meaning: "照片" },{ word: "beautiful", pronunciation: "/ˈbjuːtɪfl/", meaning: "美丽的" },
+        { word: "delicious", pronunciation: "/dɪˈlɪʃəs/", meaning: "美味的" },{ word: "excited", pronunciation: "/ɪkˈsaɪtɪd/", meaning: "兴奋的" },
+        { word: "ant", pronunciation: "/ænt/", meaning: "蚂蚁" },{ word: "bag", pronunciation: "/bæɡ/", meaning: "包" },
+        { word: "bed", pronunciation: "/bed/", meaning: "床" },{ word: "box", pronunciation: "/bɒks/", meaning: "盒子" },
+        { word: "boy", pronunciation: "/bɔɪ/", meaning: "男孩" },{ word: "girl", pronunciation: "/ɡɜːl/", meaning: "女孩" },
+        { word: "cap", pronunciation: "/kæp/", meaning: "帽子" },{ word: "cup", pronunciation: "/kʌp/", meaning: "杯子" },
+        { word: "day", pronunciation: "/deɪ/", meaning: "白天" },{ word: "ear", pronunciation: "/ɪə/", meaning: "耳朵" },
+        { word: "eye", pronunciation: "/aɪ/", meaning: "眼睛" },{ word: "face", pronunciation: "/feɪs/", meaning: "脸" },
+        { word: "foot", pronunciation: "/fʊt/", meaning: "脚" },{ word: "hand", pronunciation: "/hænd/", meaning: "手" },
+        { word: "head", pronunciation: "/hed/", meaning: "头" },{ word: "leg", pronunciation: "/leɡ/", meaning: "腿" },
+        { word: "nose", pronunciation: "/nəʊz/", meaning: "鼻子" },{ word: "mouth", pronunciation: "/maʊθ/", meaning: "嘴巴" },
+        { word: "tooth", pronunciation: "/tuːθ/", meaning: "牙齿" },{ word: "hair", pronunciation: "/heə/", meaning: "头发" },
+        { word: "arm", pronunciation: "/ɑːm/", meaning: "手臂" },{ word: "knee", pronunciation: "/niː/", meaning: "膝盖" },
+        { word: "ship", pronunciation: "/ʃɪp/", meaning: "轮船" },{ word: "train", pronunciation: "/treɪn/", meaning: "火车" },
+        { word: "plane", pronunciation: "/pleɪn/", meaning: "飞机" },{ word: "bike", pronunciation: "/baɪk/", meaning: "自行车" },
+        { word: "ball", pronunciation: "/bɔːl/", meaning: "球" },{ word: "toy", pronunciation: "/tɔɪ/", meaning: "玩具" },
+        { word: "doll", pronunciation: "/dɒl/", meaning: "娃娃" },{ word: "kite", pronunciation: "/kaɪt/", meaning: "风筝" },
+        { word: "lion", pronunciation: "/ˈlaɪən/", meaning: "狮子" },{ word: "zoo", pronunciation: "/zuː/", meaning: "动物园" },
+        { word: "park", pronunciation: "/pɑːk/", meaning: "公园" },{ word: "farm", pronunciation: "/fɑːm/", meaning: "农场" },
+        { word: "river", pronunciation: "/ˈrɪvə/", meaning: "河流" },{ word: "lake", pronunciation: "/leɪk/", meaning: "湖" },
+        { word: "hill", pronunciation: "/hɪl/", meaning: "小山" },{ word: "tree", pronunciation: "/triː/", meaning: "树" },
+        { word: "grass", pronunciation: "/ɡrɑːs/", meaning: "草" },{ word: "leaf", pronunciation: "/liːf/", meaning: "叶子" },
+        { word: "seed", pronunciation: "/siːd/", meaning: "种子" },{ word: "root", pronunciation: "/ruːt/", meaning: "根" },
+        { word: "sky", pronunciation: "/skaɪ/", meaning: "天空" },{ word: "cloud", pronunciation: "/klaʊd/", meaning: "云" },
+        { word: "rain", pronunciation: "/reɪn/", meaning: "雨" },{ word: "snow", pronunciation: "/snəʊ/", meaning: "雪" },
+        { word: "wind", pronunciation: "/wɪnd/", meaning: "风" },{ word: "road", pronunciation: "/rəʊd/", meaning: "路" },
+        { word: "shop", pronunciation: "/ʃɒp/", meaning: "商店" },{ word: "hospital", pronunciation: "/ˈhɒspɪtl/", meaning: "医院" },
+        { word: "doctor", pronunciation: "/ˈdɒktə/", meaning: "医生" },{ word: "nurse", pronunciation: "/nɜːs/", meaning: "护士" },
+        { word: "driver", pronunciation: "/ˈdraɪvə/", meaning: "司机" },{ word: "cook", pronunciation: "/kʊk/", meaning: "厨师" }
+    ];
+
+    const WORD_BANK = wordBankData;
+    console.log("词汇量:", WORD_BANK.length);
+
+    // 元音/辅音组合
+    const VOWEL_COMBS = new Set(['ee', 'ea', 'ai', 'ou', 'ow', 'oo', 'ie', 'ue', 'oa', 'ae', 'ey', 'ay', 'oi', 'oy', 'au', 'ew']);
+    const CONSONANT_COMBS = new Set(['ch', 'sh', 'th', 'wh', 'ph', 'ck', 'ng', 'nk', 'gh', 'qu', 'tr', 'dr', 'br', 'cr', 'fr', 'gr', 'pr', 'pl', 'bl', 'cl', 'fl', 'gl', 'sl', 'sc', 'sk', 'sm', 'sn', 'sp', 'st', 'sw', 'tw', 'kn', 'wr']);
+
+    function tokenizeWord(word) {
+        let tokens = [];
+        let i = 0;
+        const w = word.toLowerCase();
+        while (i < w.length) {
+            let matched = false;
+            if (i + 2 <= w.length) {
+                let two = w.substring(i, i+2);
+                if (VOWEL_COMBS.has(two) || CONSONANT_COMBS.has(two)) {
+                    tokens.push({ text: two, type: 'comb' });
+                    i += 2;
+                    matched = true;
+                }
+            }
+            if (!matched) {
+                let ch = w[i];
+                let isVowel = 'aeiou'.includes(ch);
+                tokens.push({ text: ch, type: isVowel ? 'vowel' : 'consonant' });
+                i++;
+            }
+        }
+        return tokens;
+    }
+
+    let currentWordObj = null, currentTokens = [], missingPositions = [], allCompleted = false;
+    // 计时&计数变量
+    let correctCount = 0;
+    let currentTimer = 0;
+    let timerInterval = null;
+    let wordStartTime = null;
+    let isTiming = false;
+    
+    const meaningSpan = document.getElementById('wordMeaning');
+    const pronounceSpan = document.getElementById('wordPronounce');
+    const speakBtn = document.getElementById('speakBtn');
+    const nextBtn = document.getElementById('nextWordBtn');
+    const feedbackDiv = document.getElementById('feedbackMsg');
+    const chunksContainer = document.getElementById('chunksContainer');
+    const fullWordDisplay = document.getElementById('fullWordDisplay');
+    const correctCountSpan = document.getElementById('correctCountDisplay');
+    const timerDisplaySpan = document.getElementById('timerDisplay');
+    const resetCountBtn = document.getElementById('resetCountBtn');
+
+    function updateStatsDisplay() {
+        correctCountSpan.textContent = correctCount;
+        timerDisplaySpan.textContent = currentTimer.toFixed(1);
+    }
+    
+    function startTimer() {
+        if (timerInterval) clearInterval(timerInterval);
+        currentTimer = 0;
+        updateStatsDisplay();
+        wordStartTime = Date.now();
+        isTiming = true;
+        timerInterval = setInterval(() => {
+            if (isTiming && !allCompleted) {
+                const now = Date.now();
+                currentTimer = (now - wordStartTime) / 1000;
+                updateStatsDisplay();
+            } else if (allCompleted) {
+                if (timerInterval) clearInterval(timerInterval);
+                timerInterval = null;
+            }
+        }, 100);
+    }
+    
+    function onWordCompleted() {
+        if (allCompleted) return;
+        allCompleted = true;
+        if (isTiming) {
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = null;
+            isTiming = false;
+            const finalTime = (Date.now() - wordStartTime) / 1000;
+            currentTimer = finalTime;
+            updateStatsDisplay();
+        }
+        correctCount++;
+        updateStatsDisplay();
+        showFullWord();
+        feedbackDiv.innerHTML = `🎉🎉 完美拼写！ 用时 ${currentTimer.toFixed(1)} 秒 🎉🎉<br>点击喇叭听发音，继续下一个单词吧。`;
+        feedbackDiv.className = 'feedback-area success-feedback';
+    }
+    
+    function showFullWord() {
+        if (!currentWordObj) return;
+        fullWordDisplay.innerHTML = `✨ 完整单词：<span>${currentWordObj.word}</span> ✨`;
+    }
+    function clearFullWord() {
+        fullWordDisplay.innerHTML = `💡 完成全部填空后，完整单词将显示在这里`;
+    }
+
+    function getCandidatePoolByMode(mode) {
+        if (mode === 'vowel') {
+            let vowels = new Set(['a','e','i','o','u']);
+            let combos = Array.from(VOWEL_COMBS);
+            return [...vowels, ...combos];
+        } else {
+            let cons = 'bcdfghjklmnpqrstvwxyz'.split('');
+            let combos = Array.from(CONSONANT_COMBS);
+            return [...cons, ...combos];
+        }
+    }
+
+    function generateOptions(correctText, mode) {
+        let pool = getCandidatePoolByMode(mode);
+        let candidates = pool.filter(item => item !== correctText);
+        let shuffled = [...candidates];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        let dists = shuffled.slice(0, 3);
+        let options = [correctText, ...dists];
+        for (let i = options.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [options[i], options[j]] = [options[j], options[i]];
+        }
+        return options;
+    }
+
+    function buildGameForWord(wordObj) {
+        const tokens = tokenizeWord(wordObj.word);
+        const mode = Math.random() < 0.5 ? 'vowel' : 'consonant';
+        let missing = [];
+        for (let i = 0; i < tokens.length; i++) {
+            const token = tokens[i];
+            let isTarget = false;
+            if (mode === 'vowel') {
+                if (token.type === 'vowel' || (token.type === 'comb' && VOWEL_COMBS.has(token.text))) isTarget = true;
+            } else {
+                if (token.type === 'consonant' || (token.type === 'comb' && CONSONANT_COMBS.has(token.text))) isTarget = true;
+            }
+            if (isTarget) {
+                missing.push({
+                    idx: i,
+                    correctText: token.text,
+                    filledText: null,
+                    options: generateOptions(token.text, mode)
+                });
+            }
+        }
+        if (missing.length === 0) {
+            const altMode = mode === 'vowel' ? 'consonant' : 'vowel';
+            for (let i = 0; i < tokens.length; i++) {
+                const token = tokens[i];
+                let isTarget = false;
+                if (altMode === 'vowel') {
+                    if (token.type === 'vowel' || (token.type === 'comb' && VOWEL_COMBS.has(token.text))) isTarget = true;
+                } else {
+                    if (token.type === 'consonant' || (token.type === 'comb' && CONSONANT_COMBS.has(token.text))) isTarget = true;
+                }
+                if (isTarget) {
+                    missing.push({
+                        idx: i,
+                        correctText: token.text,
+                        filledText: null,
+                        options: generateOptions(token.text, altMode)
+                    });
+                }
+            }
+            if (missing.length === 0) missing = [{ idx:0, correctText:tokens[0].text, filledText:null, options: generateOptions(tokens[0].text, altMode) }];
+        }
+        return { tokens, missing };
+    }
+
+    function renderSpelling(tokens, missingMap, allCompletedFlag) {
+        chunksContainer.innerHTML = '';
+        for (let i = 0; i < tokens.length; i++) {
+            const token = tokens[i];
+            const missItem = missingMap.get(i);
+            if (missItem) {
+                const unitDiv = document.createElement('div');
+                unitDiv.className = 'letter-unit';
+                const displayDiv = document.createElement('div');
+                displayDiv.className = 'letter-display';
+                if (missItem.filledText) {
+                    displayDiv.textContent = missItem.filledText;
+                    displayDiv.classList.add('filled-correct');
+                } else {
+                    const placeholder = document.createElement('div');
+                    placeholder.className = 'missing-placeholder';
+                    const line = document.createElement('div');
+                    line.className = 'solid-line';
+                    placeholder.appendChild(line);
+                    displayDiv.appendChild(placeholder);
+                }
+                const optionsDiv = document.createElement('div');
+                optionsDiv.className = 'options-area';
+                missItem.options.forEach(opt => {
+                    const btn = document.createElement('button');
+                    btn.textContent = opt;
+                    btn.classList.add('opt-btn');
+                    if (allCompletedFlag) {
+                        btn.disabled = true;
+                        btn.classList.add('disabled-btn');
+                    }
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        if (allCompleted) return;
+                        if (missItem.filledText === opt) return;
+                        if (opt === missItem.correctText) {
+                            missItem.filledText = opt;
+                            let allCorrect = true;
+                            for (let m of missingPositions) {
+                                if (!m.filledText || m.filledText !== m.correctText) {
+                                    allCorrect = false;
+                                    break;
+                                }
+                            }
+                            if (allCorrect) {
+                                onWordCompleted();
+                                renderSpelling(tokens, missingMap, true);
+                            } else {
+                                renderSpelling(tokens, missingMap, false);
+                                let filledCnt = missingPositions.filter(m => m.filledText !== null).length;
+                                feedbackDiv.innerHTML = `📝 已完成 ${filledCnt}/${missingPositions.length} 个空缺，继续选择正确的字母/组合！`;
+                                feedbackDiv.className = 'feedback-area';
+                                clearFullWord();
+                            }
+                        } else {
+                            feedbackDiv.innerHTML = `❌ 错误！ “${opt}” 不正确，再试试看吧！ ❌`;
+                            feedbackDiv.className = 'feedback-area';
+                            feedbackDiv.style.background = "#ffe0e0";
+                            setTimeout(() => { if(feedbackDiv) feedbackDiv.style.background = "#f4efe6"; }, 800);
+                            btn.classList.add('error-shake');
+                            setTimeout(() => btn.classList.remove('error-shake'), 400);
+                            clearFullWord();
+                        }
+                    });
+                    optionsDiv.appendChild(btn);
+                });
+                unitDiv.appendChild(displayDiv);
+                unitDiv.appendChild(optionsDiv);
+                chunksContainer.appendChild(unitDiv);
+            } else {
+                const staticDiv = document.createElement('div');
+                staticDiv.className = 'static-unit';
+                staticDiv.textContent = token.text;
+                chunksContainer.appendChild(staticDiv);
+            }
+        }
+    }
+
+    function loadNewWord() {
+        if (window.speechSynthesis.speaking) window.speechSynthesis.cancel();
+        if (timerInterval) clearInterval(timerInterval);
+        timerInterval = null;
+        const randomIdx = Math.floor(Math.random() * WORD_BANK.length);
+        currentWordObj = { ...WORD_BANK[randomIdx] };
+        meaningSpan.innerText = currentWordObj.meaning;
+        pronounceSpan.innerText = currentWordObj.pronunciation;
+        const { tokens, missing } = buildGameForWord(currentWordObj);
+        currentTokens = tokens;
+        missingPositions = missing;
+        allCompleted = false;
+        const missingMap = new Map();
+        missingPositions.forEach(m => missingMap.set(m.idx, m));
+        renderSpelling(currentTokens, missingMap, false);
+        feedbackDiv.innerHTML = `✨ 单词共有 ${missingPositions.length} 个空缺，点击下方小写字母(组合)补全！ ✨`;
+        feedbackDiv.className = 'feedback-area';
+        feedbackDiv.style.background = "#f4efe6";
+        clearFullWord();
+        startTimer();
+    }
+
+    function speakBritish() {
+        if (!currentWordObj) return;
+        const word = currentWordObj.word;
+        if (window.speechSynthesis.speaking) window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(word);
+        utterance.lang = 'en-GB';
+        utterance.rate = 0.85;
+        const voices = window.speechSynthesis.getVoices();
+        const ukVoice = voices.find(voice => voice.lang === 'en-GB' || voice.lang.startsWith('en-GB'));
+        if (ukVoice) utterance.voice = ukVoice;
+        window.speechSynthesis.speak(utterance);
+    }
+
+    function resetCounter() {
+        correctCount = 0;
+        updateStatsDisplay();
+        feedbackDiv.innerHTML = "✅ 正确计数已重置，继续挑战！";
+        setTimeout(() => {
+            if(feedbackDiv.innerHTML.includes("正确计数已重置")) 
+                feedbackDiv.innerHTML = `✨ 单词共有 ${missingPositions.length} 个空缺，点击下方小写字母(组合)补全！ ✨`;
+        }, 1500);
+    }
+
+    speakBtn.addEventListener('click', speakBritish);
+    nextBtn.addEventListener('click', () => loadNewWord());
+    resetCountBtn.addEventListener('click', resetCounter);
+    
+    loadNewWord();
+
+    if (window.speechSynthesis) window.speechSynthesis.onvoiceschanged = () => {};
+</script>
+</body>
+</html>
